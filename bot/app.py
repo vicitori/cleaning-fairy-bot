@@ -12,6 +12,9 @@ from telegram.ext import (
     CommandHandler, 
     JobQueue
 )
+from telegram.error import BadRequest
+import nest_asyncio
+nest_asyncio.apply()
 
 TOKEN = "7163266270:AAHiO2VqNdY7KPdn7MA_YIKKAt4KkQ-mfdQ"
 
@@ -443,9 +446,17 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/cancel — Прервать текущую операцию\n"
     )
 
-    await update.message.reply_text(help_text, parse_mode="Markdown")
-
-def main() -> None:
+    try:
+        await update.effective_message.reply_text(help_text, parse_mode="Markdown")
+    except BadRequest:
+        # Если сообщение не найдено — отправляем новое
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=help_text,
+            parse_mode="Markdown"
+        )
+    
+async def main() -> None:
     job_queue = JobQueue()
 
     application = Application.builder().token(TOKEN).job_queue(job_queue).build()
@@ -479,7 +490,10 @@ def main() -> None:
     application.add_handler(conv_handler)
     application.add_handler(CommandHandler("help", help))
 
-    job_queue.start()
+    await job_queue.start()
+    await application.run_polling()
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())
+    
