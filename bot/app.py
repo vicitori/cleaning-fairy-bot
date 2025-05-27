@@ -1,5 +1,6 @@
 from datetime import datetime, time, timedelta
 import pytz
+import os
 
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -486,7 +487,11 @@ def main() -> None:
     application.add_handler(CommandHandler("help", help))
 
     job_queue.start()
-    application.run_polling()
+    application.run_webhook(
+    listen="0.0.0.0",
+    port=int(os.environ.get("PORT", 5000)),
+    webhook_url="https://your-app-name.scalingo.io/" + TOKEN
+)
 
 if __name__ == "__main__":
     main()  
