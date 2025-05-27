@@ -62,7 +62,7 @@ async def handle_start_choice(update: Update, context: ContextTypes.DEFAULT_TYPE
     else:
         await query.edit_message_text(
             "Хорошо! Когда будете готовы настроить график уборки, "
-            "вызовите команду /init снова.\n\n"
+            "вызовите команду /hello снова.\n\n"
             "До новых чистых встреч! ✨",
             parse_mode="Markdown"
         )
@@ -227,16 +227,19 @@ async def handle_order(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             chat_id=context.user_data['CHAT_ID'],
             text=f"✨ *График уборки установлен!* ✨\n\n"
                  f"Очередность:\n{ordered_list}\n\n"
-                 "Теперь я буду напоминать каждую в неделю, чья очередь наводить порядок в блоке :)",
+                 "Теперь я буду напоминать каждую неделю, чья очередь наводить порядок в блоке :)\n\n"
+                 "Используйте команды:\n"
+                 "/edit - изменить список\n"
+                 "/schedule - посмотреть график\n"
+                 "/help - справка по командам",
             parse_mode="Markdown"
         )
         
+        now = datetime.now()
+        context.user_data['NEXT_MONDAY'] = now + timedelta(days=(7 - now.weekday()) % 7)
+        context.user_data['NEXT_MONDAY'] = context.user_data['NEXT_MONDAY'].replace(hour=9, minute=0, second=0, microsecond=0)
 
-        now = datetime.now(pytz.utc)  # Время в UTC
-        next_monday = now + timedelta(days=(7 - now.weekday()) % 7)
-        next_monday = next_monday.replace(hour=9, minute=0, second=0, microsecond=0)
-
-        delay = (next_monday - now).total_seconds()
+        delay = (context.user_data['NEXT_MONDAY'] - now).total_seconds()
 
         members = context.user_data['MEMBERS']
         job_data = {
@@ -252,8 +255,8 @@ async def handle_order(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             data=job_data,
             name="weekly_cleaning_reminder"
         )
-        
-        return await help(update, context)
+
+        return ConversationHandler.END
     
     elif query.data == "reset":
         for name in context.user_data['MEMBERS']:
@@ -379,7 +382,7 @@ async def add_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(f"✅ Участник *{name}* успешно добавлен.", parse_mode="Markdown")
 
-    context.user_data['CURRENT_POSITION'] = 1
+    context.user_data['CURRENT_POSITION'] += 1
     return await setup_order(update, context)
 
 async def remove_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -439,24 +442,16 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
         "📚 *Доступные команды:*\n\n"
-        "/hello — Начать настройку графика уборки\n"
         "/edit — Редактировать список участников или изменить очередь\n"
         "/schedule — Посмотреть текущий график уборки с датами\n"
         "/help — Показать это сообщение\n"
         "/cancel — Прервать текущую операцию\n"
     )
 
-    try:
-        await update.effective_message.reply_text(help_text, parse_mode="Markdown")
-    except BadRequest:
-        # Если сообщение не найдено — отправляем новое
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=help_text,
-            parse_mode="Markdown"
-        )
+    await update.effective_message.reply_text(help_text, parse_mode="Markdown")
+
     
-async def main() -> None:
+def main() -> None:
     job_queue = JobQueue()
 
     application = Application.builder().token(TOKEN).job_queue(job_queue).build()
@@ -490,10 +485,8 @@ async def main() -> None:
     application.add_handler(conv_handler)
     application.add_handler(CommandHandler("help", help))
 
-    await job_queue.start()
-    await application.run_polling()
+    job_queue.start()
+    application.run_polling()
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
-    
+    main()  
