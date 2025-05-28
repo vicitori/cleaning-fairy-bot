@@ -39,8 +39,8 @@ async def send_weekly_reminder(chat_id: int, members: dict, current_index: int):
              "Не забудь отметиться в моём следующем напоминании."
     )
 
-@dp.message(Command("hello"))
-async def hello(message: types.Message, state: FSMContext):
+@dp.message(Command("start"))
+async def start(message: types.Message, state: FSMContext):
     user_data[message.chat.id] = {
         'chat_id': message.chat.id,
         'members': {},
