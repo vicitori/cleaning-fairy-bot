@@ -5,7 +5,6 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.utils.markdown import hbold
 import asyncio
 from config_reader import config
 import logging
@@ -34,8 +33,8 @@ async def send_weekly_reminder(chat_id: int, members: dict, current_index: int):
     
     await bot.send_message(
         chat_id=chat_id,
-        text=f"🧹 {hbold('Это снова Фея Уборки с напоминанием :)')}\n\n"
-             f"На этой неделе порядок наводит {hbold(current_name)}\n"
+        text=f"🧹 Это снова Фея Уборки с напоминанием :)\n\n"
+             f"На этой неделе порядок наводит {current_name}\n"
              "Не забудь отметиться в моём следующем напоминании."
     )
 
@@ -54,7 +53,7 @@ async def start(message: types.Message, state: FSMContext):
     )
     
     await message.answer(
-        f"✨ {hbold('Привет, это Фея Уборки!')} ✨\n\n"
+        f"✨ Привет, это Фея Уборки! ✨\n\n"
         "Я помогу организовать график уборки в вашем блоке.\n\n"
         "Готовы начать настройку прямо сейчас?",
         reply_markup=builder.as_markup()
@@ -81,7 +80,7 @@ async def handle_start_now(callback: types.CallbackQuery, state: FSMContext):
 async def handle_start_later(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
         "Хорошо! Когда будете готовы настроить график уборки, "
-        "вызовите команду /hello снова.\n\n"
+        "вызовите команду /start снова.\n\n"
         "До новых чистых встреч! ✨"
     )
     await state.clear()
@@ -93,7 +92,7 @@ async def get_member_count(callback: types.CallbackQuery, state: FSMContext):
     user_data[callback.message.chat.id]['current_position'] = 1
     
     msg = await callback.message.edit_text(
-        f"📝 {hbold('Введите имена участников по одному:')}\n\n"
+        f"📝 Введите имена участников по одному:\n\n"
         "Список пока пуст...\n\n"
         f"Осталось ввести: {member_cnt}"
     )
@@ -112,7 +111,7 @@ async def get_member_names(message: types.Message, state: FSMContext):
     
     try:
         await user_data[chat_id]['msg_buffer'].edit_text(
-            f"📝 {hbold('Введите имена участников по одному:')}\n\n"
+            f"📝 Введите имена участников по одному:\n\n"
             f"{names_list}\n\n"
             f"Осталось ввести: {rest_cnt}"
         )
@@ -129,7 +128,7 @@ async def get_member_names(message: types.Message, state: FSMContext):
         
         names_text = "\n".join(f"▪ {n}" for n in user_data[chat_id]['members'])
         await message.answer(
-            f"📋 {hbold('Подтвердите список участников:')}\n\n{names_text}",
+            f"📋 Подтвердите список участников: \n\n{names_text}",
             reply_markup=builder.as_markup()
         )
         await state.set_state(Form.confirm_names)
@@ -151,7 +150,7 @@ async def confirm_names_no(callback: types.CallbackQuery, state: FSMContext):
         pass
     
     msg = await callback.message.answer(
-        f"{hbold('Список сброшен.')}\n\n📝 Введите имена участников по одному:"
+        f"Список сброшен.\n\n📝 Введите имена участников по одному:"
     )
     user_data[chat_id]['msg_buffer'] = msg
     await state.set_state(Form.get_names)
@@ -186,7 +185,7 @@ async def setup_order(chat_id: int, state: FSMContext):
     
     msg = await bot.send_message(
         chat_id=chat_id,
-        text=f"🔢 {hbold('Установите порядок уборки:')}\n\n"
+        text=f"🔢 Установите порядок уборки:\n\n"
              f"Текущее распределение:\n{ordered_list}\n\n"
              f"Выберите, кто будет убираться следующим:",
         reply_markup=builder.as_markup()
@@ -212,7 +211,7 @@ async def handle_order_done(callback: types.CallbackQuery, state: FSMContext):
         pass
 
     await callback.message.answer(
-        f"✨ {hbold('График уборки установлен!')} ✨\n\n"
+        f"✨ График уборки установлен! ✨\n\n"
         f"Очередность:\n{ordered_list}\n\n"
         "Теперь я буду напоминать каждую неделю, чья очередь наводить порядок в блоке :)\n\n"
         "Используйте команды:\n"
@@ -292,13 +291,13 @@ async def show_schedule(message: types.Message):
     
     schedule_text = "\n".join(schedule_lines)
     
-    await message.answer(f"📅 {hbold('График уборки с датами:')}\n\n{schedule_text}")
+    await message.answer(f"📅 График уборки с датами:\n\n{schedule_text}")
 
 @dp.message(Command("edit"))
 async def edit_menu(message: types.Message, state: FSMContext):
     chat_id = message.chat.id
     if chat_id not in user_data or not user_data[chat_id].get('members'):
-        await message.answer("Графика уборки нет, для начала настройте его, используя команду /hello")
+        await message.answer("Графика уборки нет, для начала настройте его, используя команду /start")
         return
     
     builder = InlineKeyboardBuilder()
@@ -311,7 +310,7 @@ async def edit_menu(message: types.Message, state: FSMContext):
     builder.adjust(1)
     
     await message.answer(
-        f"🛠️ {hbold('Режим редактирования графика')}",
+        f"🛠️ Режим редактирования графика",
         reply_markup=builder.as_markup()
     )
     await state.set_state(Form.edit_menu)
@@ -370,7 +369,7 @@ async def add_member(message: types.Message, state: FSMContext):
     user_data[chat_id]['member_count'] += 1
     user_data[chat_id]['current_position'] += 1
     
-    await message.answer(f"✅ Участник {hbold(name)} успешно добавлен.")
+    await message.answer(f"✅ Участник {name} успешно добавлен.")
     await setup_order(chat_id, state)
 
 @dp.callback_query(Form.remove_member, F.data.startswith("remove_"))
@@ -382,7 +381,7 @@ async def remove_member(callback: types.CallbackQuery, state: FSMContext):
     user_data[chat_id]['member_count'] -= 1
     user_data[chat_id]['current_position'] = 1
     
-    await callback.message.edit_text(f"✅ Участник {hbold(name_to_remove)} удалён.")
+    await callback.message.edit_text(f"✅ Участник {name_to_remove} удалён.")
     await setup_order(chat_id, state)
 
 @dp.callback_query(Form.reorder_members, F.data.startswith("reorder_"))
@@ -400,7 +399,7 @@ async def reorder_members_select(callback: types.CallbackQuery, state: FSMContex
     builder.adjust(3)
     
     await callback.message.edit_text(
-        f"Выберите новую позицию для участника: {hbold(name)}",
+        f"Выберите новую позицию для участника: {name}",
         reply_markup=builder.as_markup()
     )
 
@@ -421,14 +420,14 @@ async def reorder_members_set(callback: types.CallbackQuery, state: FSMContext):
         user_data[chat_id]['members'][n] = i + 1
     
     await callback.message.edit_text(
-        f"✅ Порядок изменён!\nТеперь {hbold(name)} на {new_pos}-м месте."
+        f"✅ Порядок изменён!\nТеперь {name} на {new_pos}-м месте."
     )
     await setup_order(chat_id, state)
 
 @dp.message(Command("help"))
 async def help_command(message: types.Message):
     help_text = (
-        f"📚 {hbold('Доступные команды:')}\n\n"
+        f"📚 Доступные команды:\n\n"
         "/edit — Редактировать список участников или изменить очередь\n"
         "/schedule — Посмотреть текущий график уборки с датами\n"
         "/help — Показать это сообщение\n"
